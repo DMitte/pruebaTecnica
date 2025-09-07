@@ -6,20 +6,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export const Navbar = () => {
-  const [role , setRole] = useState<string | null>(null);  
-  const { logout } = useAuth();
+  const [role, setRole] = useState<string | null>(null);
+  const { logout, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    const rawRole = localStorage.getItem("role");
-    let cleanRole = rawRole;
-    try {
-      cleanRole = rawRole ? JSON.parse(rawRole) : null;
-    } catch {
-      cleanRole = rawRole;
-    }
-    setRole(cleanRole);
-  }, []);
+    setRole(user?.role ?? null);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -34,13 +27,16 @@ export const Navbar = () => {
 
       <div>
         <ul className="flex gap-4 lg:gap-6">
-          {siteConfig.navItems.map((item) => (
-            <li key={item.href} className="hover:underline underline-offset-4 transition-all duration-200">
-              <NextLink href={item.href}>
-                {item.label}
-              </NextLink>
-            </li>
-          ))}
+          {siteConfig.navItems
+            .filter((item) => !(item.href === "/usuarios" && role !== "admin"))
+            .map((item) => (
+              <li
+                key={item.href}
+                className="hover:underline underline-offset-4 transition-all duration-200"
+              >
+                <NextLink href={item.href}>{item.label}</NextLink>
+              </li>
+            ))}
         </ul>
       </div>
 

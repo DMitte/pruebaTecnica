@@ -5,14 +5,22 @@ import { useAuth } from "../context/Authcontext";
 import { useRouter } from "next/navigation";
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading } = useAuth();
   const router = useRouter();
 
   React.useEffect(() => {
-    if (!isLoggedIn) {
+    if (!loading && !isLoggedIn) {
       router.replace("/auth/login");
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-blue-400 text-xl">Cargando...</span>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) return null;
   return <>{children}</>;

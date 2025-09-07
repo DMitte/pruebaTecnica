@@ -7,6 +7,7 @@ const LoginPage: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const { login, isLoggedIn } = useAuth();
     const router = useRouter();
 
@@ -21,6 +22,7 @@ const LoginPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");        
+        setLoading(true);
 
         try {
             const res = await fetch("/api/login", {
@@ -39,59 +41,69 @@ const LoginPage: React.FC = () => {
              
             if(data.error){
                 setError(data.error);
+                setLoading(false);
                 return;
             }        
-            
+            console.log(data.user);
             login(data.token, data.user);
             router.replace("/");
         } catch (err: any) {
             setError(err.message || "Error al iniciar sesión");
+            setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-md mx-auto mt-16 p-8 bg-gray-950 rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold mb-6 text-center text-white">Iniciar sesión</h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-                <label htmlFor="email" className="block text-sm font-medium text-white">
-                Correo electrónico
-                </label>
-                <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autoComplete="email"
-                />
-            </div>
-            <div>
-                <label htmlFor="password" className="block text-sm font-medium text-white">
-                Contraseña
-                </label>
-                <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autoComplete="current-password"
-                />
-            </div>
-            {error && (
-                <div className="text-red-600 text-sm text-center">{error}</div>
+        <>
+            {loading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+                    <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"></div>
+                </div>
             )}
-            <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-150"
-            >
-                Entrar
-            </button>
-            </form>
-        </div>
+            <div className="max-w-md mx-auto mt-16 p-8 bg-gray-950 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-bold mb-6 text-center text-white">Iniciar sesión</h2>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-white">
+                            Correo electrónico
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                            className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoComplete="email"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-white">
+                            Contraseña
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            className="mt-2 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoComplete="current-password"
+                        />
+                    </div>
+                    {error && (
+                        <div className="text-red-600 text-sm text-center">{error}</div>
+                    )}
+                    <button
+                        type="submit"
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-150"
+                        disabled={loading}
+                    >
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </>
     );
 };
 

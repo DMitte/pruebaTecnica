@@ -7,7 +7,7 @@ export async function POST (req: NextRequest){
 
     let { data: user, error} = await supabase
     .from('user')
-    .select('password, email, role')
+    .select('name,password, email, role')
     .eq('email', email)
     .single();
 

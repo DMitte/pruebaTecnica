@@ -1,11 +1,12 @@
 "use client";
-import type {SVGProps} from "react";
+import type { SVGProps } from "react";
 
 import type { Selection, SortDescriptor } from "@heroui/table";
 import type { ChipProps } from "@heroui/chip";
 import { getSales } from "../api/sales";
 import { ProtectedRoute } from "../../components/ProtectedRoute";
-
+import { Link } from "@heroui/link";
+import { Navbar } from "../../components/navbar";
 import React from "react";
 import {
   Table,
@@ -13,15 +14,22 @@ import {
   TableColumn,
   TableBody,
   TableRow,
-  TableCell,        
+  TableCell,
 } from "@heroui/table";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/dropdown";
 import { Chip } from "@heroui/chip";
 import { User } from "@heroui/user";
 import { Pagination } from "@heroui/pagination";
-
+import { useAuth } from "../../context/Authcontext";
+import { aprobarVenta } from "../api/sales";
+import { eliminarVentaSoft, eliminarVentaHard } from "../api/sales";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;
@@ -31,7 +39,12 @@ export function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 }
 
-export const PlusIcon = ({size = 24, width, height, ...props}: IconSvgProps) => {
+export const PlusIcon = ({
+  size = 24,
+  width,
+  height,
+  ...props
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -57,7 +70,12 @@ export const PlusIcon = ({size = 24, width, height, ...props}: IconSvgProps) => 
   );
 };
 
-export const VerticalDotsIcon = ({size = 24, width, height, ...props}: IconSvgProps) => {
+export const VerticalDotsIcon = ({
+  size = 24,
+  width,
+  height,
+  ...props
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -107,7 +125,10 @@ export const SearchIcon = (props: IconSvgProps) => {
   );
 };
 
-export const ChevronDownIcon = ({strokeWidth = 1.5, ...otherProps}: IconSvgProps) => {
+export const ChevronDownIcon = ({
+  strokeWidth = 1.5,
+  ...otherProps
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -131,32 +152,27 @@ export const ChevronDownIcon = ({strokeWidth = 1.5, ...otherProps}: IconSvgProps
   );
 };
 
-const salesData = await getSales();
-const users = salesData.venta || [];
-
 export const columns = [
-  {name: "ID", uid: "id", sortable: true},
-  {name: "NOMBRE CLIENTE", uid: "nombre", sortable: true},  
-  {name: "FECHA NACIMIENTO", uid: "fecha_nacimiento", sortable: true},
-  {name: "ASESOR", uid: "asesor"},
-  {name: "CODIGO", uid: "codigo"},
-  {name: "PRECIO", uid: "precio", sortable: true},
-  {name: "DESCUENTO", uid: "descuento", sortable: true},
-  {name: "DESCUENTO EXTRA", uid: "extra", sortable: true},
-  {name: "TOTAL", uid: "total", sortable: true},
-  {name: "ESTADO", uid: "status", sortable: true},
-  {name: "CREADO", uid: "creado", sortable: true},
-  {name: "MODIFICADO", uid: "modificado", sortable: true},
-  {name: "ACCIONES", uid: "actions"},
+  { name: "ID", uid: "id", sortable: true },
+  { name: "NOMBRE CLIENTE", uid: "nombre", sortable: true },
+  { name: "FECHA NACIMIENTO", uid: "fecha_nacimiento", sortable: true },
+  { name: "ASESOR", uid: "asesor" },
+  { name: "CODIGO", uid: "codigo" },
+  { name: "PRECIO", uid: "precio", sortable: true },
+  { name: "DESCUENTO", uid: "descuento", sortable: true },
+  { name: "DESCUENTO EXTRA", uid: "extra", sortable: true },
+  { name: "TOTAL", uid: "total", sortable: true },
+  { name: "ESTADO", uid: "status", sortable: true },
+  { name: "CREADO", uid: "creado", sortable: true },
+  { name: "MODIFICADO", uid: "modificado", sortable: true },
+  { name: "ACCIONES", uid: "actions" },
 ];
 
 export const statusOptions = [
-  {name: "Ingresada", uid: "Ingresada"},
-  {name: "Aprobada", uid: "Aprobada"},
-  {name: "Anulada", uid: "Anulada"},
+  { name: "Ingresada", uid: "Ingresada" },
+  { name: "Aprobada", uid: "Aprobada" },
+  { name: "Anulada", uid: "Anulada" },
 ];
-
-
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   Aprovada: "success",
@@ -164,15 +180,21 @@ const statusColorMap: Record<string, ChipProps["color"]> = {
   Ingresada: "warning",
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["nombre", "asesor", "total" , "status", "actions"];
-
-type User = (typeof users)[0];
+const INITIAL_VISIBLE_COLUMNS = [
+  "nombre",
+  "asesor",
+  "total",
+  "status",
+  "actions",
+];
 
 export default function Ventas() {
   const [filterValue, setFilterValue] = React.useState("");
-  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
+  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(
+    new Set([])
+  );
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
-    new Set(INITIAL_VISIBLE_COLUMNS),
+    new Set(INITIAL_VISIBLE_COLUMNS)
   );
   const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -182,13 +204,37 @@ export default function Ventas() {
   });
 
   const [page, setPage] = React.useState(1);
+  const { user } = useAuth();
+  const userRole = user?.role;
 
   const hasSearchFilter = Boolean(filterValue);
+
+  const [users, setUsers] = React.useState<any[]>([]);
+  type User = typeof users extends (infer U)[] ? U : any;
+
+  React.useEffect(() => {
+    async function fetchSales() {
+      const salesData = await getSales();
+      const allUsers = salesData.venta || [];
+      let filtered = allUsers;
+
+      if (userRole === "asesor") {
+        filtered = allUsers.filter(
+          (venta) => venta.deleted !== true && venta.cli_asesor === user?.name // Solo ventas hechas por el asesor logeado
+        );
+      }
+      // Para admin y supervisor, muestra todas
+      setUsers(filtered);
+    }
+    fetchSales();
+  }, [userRole, user?.name]);
 
   const headerColumns = React.useMemo(() => {
     if (visibleColumns === "all") return columns;
 
-    return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    return columns.filter((column) =>
+      Array.from(visibleColumns).includes(column.uid)
+    );
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
@@ -196,12 +242,15 @@ export default function Ventas() {
 
     if (hasSearchFilter) {
       filteredUsers = filteredUsers.filter((user) =>
-        user.cli_nombre.toLowerCase().includes(filterValue.toLowerCase()),
+        user.cli_nombre.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
-    if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
+    if (
+      statusFilter !== "all" &&
+      Array.from(statusFilter).length !== statusOptions.length
+    ) {
       filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.venta_estado),
+        Array.from(statusFilter).includes(user.venta_estado)
       );
     }
 
@@ -227,53 +276,86 @@ export default function Ventas() {
     });
   }, [sortDescriptor, items]);
 
+  const handleDeleteVenta = async (venta: any) => {
+    // Soft delete: marca como eliminada
+    const confirm = window.confirm(
+      "¿Seguro que quieres marcar esta venta como eliminada?"
+    );
+    if (!confirm) return;
+
+    const res = await eliminarVentaSoft(venta.id);
+    if (res.error) {
+      console.error("Error al marcar venta como eliminada:", res.error);
+      return;
+    }
+    setUsers((prev) =>
+      prev.map((u) => (u.id === venta.id ? { ...u, deleted: true } : u))
+    );
+  };
+
+  const handleDeleteVentaHard = async (venta: any) => {
+    // Hard delete: elimina completamente si ya está marcada como eliminada
+    const confirm = window.confirm(
+      "¿Seguro que quieres eliminar esta venta permanentemente?"
+    );
+    if (!confirm) return;
+
+    const res = await eliminarVentaHard(venta.id);
+    if (res.error) {
+      alert(res.error);
+      return;
+    }
+    setUsers((prev) => prev.filter((u) => u.id !== venta.id));
+  };
+
   const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
     const cellValue = user[columnKey as keyof User];
 
     switch (columnKey) {
       case "nombre":
         return (
-          <User            
-            description={user.cli_id}
-            name={user.cli_nombre}
-          >
+          <User description={user.cli_id} name={user.cli_nombre}>
             {user.cli_nombre.charAt(0)}
           </User>
         );
       case "asesor":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.cli_asesor}</p>            
+            <p className="text-bold text-small capitalize">{user.cli_asesor}</p>
           </div>
         );
       case "codigo":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.inv_code}</p>            
+            <p className="text-bold text-small capitalize">{user.inv_code}</p>
           </div>
         );
       case "precio":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.inv_precio}</p>            
+            <p className="text-bold text-small capitalize">{user.inv_precio}</p>
           </div>
         );
       case "total":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.inv_total}$</p>            
+            <p className="text-bold text-small capitalize">{user.inv_total}$</p>
           </div>
         );
       case "descuento":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.inv_descuento}$</p>            
+            <p className="text-bold text-small capitalize">
+              {user.inv_descuento}$
+            </p>
           </div>
         );
       case "extra":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small capitalize">{user.inv_desc_extra}$</p>            
+            <p className="text-bold text-small capitalize">
+              {user.inv_desc_extra}$
+            </p>
           </div>
         );
       case "fecha_nacimiento":
@@ -281,8 +363,8 @@ export default function Ventas() {
           <div className="flex flex-col">
             <p className="text-bold text-small">
               {user.cli_fec_nac
-              ? new Date(user.cli_fec_nac).toISOString().slice(0, 10)
-              : ""}
+                ? new Date(user.cli_fec_nac).toISOString().slice(0, 10)
+                : ""}
             </p>
           </div>
         );
@@ -290,12 +372,19 @@ export default function Ventas() {
         return (
           <div className="flex flex-col">
             <p className="text-bold text-small capitalize">{cellValue}</p>
-            <p className="text-bold text-tiny capitalize text-default-400">{user.team}</p>
+            <p className="text-bold text-tiny capitalize text-default-400">
+              {user.team}
+            </p>
           </div>
         );
       case "status":
         return (
-          <Chip className="capitalize" color={statusColorMap[user.venta_estado]} size="sm" variant="flat">
+          <Chip
+            className="capitalize"
+            color={statusColorMap[user.venta_estado]}
+            size="sm"
+            variant="flat"
+          >
             {user.venta_estado}
           </Chip>
         );
@@ -304,8 +393,8 @@ export default function Ventas() {
           <div className="flex flex-col">
             <p className="text-bold text-small">
               {user.created_at
-              ? new Date(user.created_at).toISOString().slice(0, 10)
-              : ""}
+                ? new Date(user.created_at).toISOString().slice(0, 10)
+                : ""}
             </p>
           </div>
         );
@@ -314,8 +403,8 @@ export default function Ventas() {
           <div className="flex flex-col">
             <p className="text-bold text-small">
               {user.update_at
-              ? new Date(user.update_at).toISOString().slice(0, 10)
-              : ""}
+                ? new Date(user.update_at).toISOString().slice(0, 10)
+                : ""}
             </p>
           </div>
         );
@@ -328,9 +417,48 @@ export default function Ventas() {
                   <VerticalDotsIcon className="text-default-300" />
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu>                
-                <DropdownItem key="edit">Editar</DropdownItem>
-                <DropdownItem key="delete">Eliminar</DropdownItem>
+              <DropdownMenu>
+                {userRole === "supervisor" && (
+                  <DropdownItem
+                    key="edit"
+                    onClick={() =>
+                      (window.location.href = `/ventas/editar?id=${user.id}`)
+                    }
+                  >
+                    Editar
+                  </DropdownItem>
+                )}
+                {userRole === "admin" && !user.deleted && (
+                  <DropdownItem
+                    key="delete-soft"
+                    className="text-yellow-500"
+                    onClick={() => handleDeleteVenta(user)}
+                  >
+                    Marcar como eliminada
+                  </DropdownItem>
+                )}
+                {userRole === "admin" && user.deleted && (
+                  <DropdownItem
+                    key="delete-hard"
+                    className="text-red-500"
+                    onClick={() => handleDeleteVentaHard(user)}
+                  >
+                    Eliminar permanentemente
+                  </DropdownItem>
+                )}
+                {/* Solo para supervisores y si la venta está "Ingresada" */}
+                {userRole === "supervisor" &&
+                  user.venta_estado === "Ingresada" && (
+                    <DropdownItem
+                      key="aprobar"
+                      color="success"
+                      onClick={async () => {
+                        await aprobarVenta(user.id); // user.id es el id de la venta
+                      }}
+                    >
+                      Aprobar venta
+                    </DropdownItem>
+                  )}
               </DropdownMenu>
             </Dropdown>
           </div>
@@ -352,10 +480,13 @@ export default function Ventas() {
     }
   }, [page]);
 
-  const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  }, []);
+  const onRowsPerPageChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setRowsPerPage(Number(e.target.value));
+      setPage(1);
+    },
+    []
+  );
 
   const onSearchChange = React.useCallback((value?: string) => {
     if (value) {
@@ -387,7 +518,10 @@ export default function Ventas() {
           <div className="flex gap-3">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
+                <Button
+                  endContent={<ChevronDownIcon className="text-small" />}
+                  variant="flat"
+                >
                   Estado
                 </Button>
               </DropdownTrigger>
@@ -408,7 +542,10 @@ export default function Ventas() {
             </Dropdown>
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
+                <Button
+                  endContent={<ChevronDownIcon className="text-small" />}
+                  variant="flat"
+                >
                   Columnas
                 </Button>
               </DropdownTrigger>
@@ -427,13 +564,20 @@ export default function Ventas() {
                 ))}
               </DropdownMenu>
             </Dropdown>
-            <Button color="primary" endContent={<PlusIcon />}>
+            <Button
+              color="primary"
+              endContent={<PlusIcon />}
+              onPress={() => (window.location.href = "/ventas/agregar")}
+              isDisabled={userRole === "admin"}
+            >
               Agregar Nuevo
             </Button>
           </div>
         </div>
         <div className="flex justify-between items-selectedcenter">
-          <span className="text-default-400 text-small">Total {users.length} ventas</span>
+          <span className="text-default-400 text-small">
+            Total {users.length} ventas
+          </span>
           <label className="flex items-center text-default-400 text-small">
             Filas por pagina:{" "}
             <select
@@ -460,7 +604,7 @@ export default function Ventas() {
 
   const bottomContent = React.useMemo(() => {
     return (
-      <div className="py-2 px-2 flex justify-between items-center">        
+      <div className="py-2 px-2 flex justify-between items-center">
         <Pagination
           isCompact
           showControls
@@ -471,10 +615,20 @@ export default function Ventas() {
           onChange={setPage}
         />
         <div className="hidden sm:flex w-[30%] justify-end gap-2">
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button
+            isDisabled={pages === 1}
+            size="sm"
+            variant="flat"
+            onPress={onPreviousPage}
+          >
             Previous
           </Button>
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button
+            isDisabled={pages === 1}
+            size="sm"
+            variant="flat"
+            onPress={onNextPage}
+          >
             Next
           </Button>
         </div>
@@ -484,39 +638,53 @@ export default function Ventas() {
 
   return (
     <ProtectedRoute>
+      <Navbar />
       <Table
         isHeaderSticky
         aria-label="Example table with custom cells, pagination and sorting"
         bottomContent={bottomContent}
         bottomContentPlacement="outside"
-      classNames={{
-        wrapper: "max-h-[382px]",
-      }}
-      sortDescriptor={sortDescriptor}
-      topContent={topContent}
-      topContentPlacement="outside"
-      onSelectionChange={setSelectedKeys}
-      onSortChange={setSortDescriptor}
-    >
-      <TableHeader columns={headerColumns}>
-        {(column) => (
-          <TableColumn
-            key={column.uid}
-            align={column.uid === "actions" ? "center" : "start"}
-            allowsSorting={column.sortable}
-          >
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
-        {(item) => (
-          <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+        classNames={{
+          wrapper: "max-h-[382px]",
+        }}
+        sortDescriptor={sortDescriptor}
+        topContent={topContent}
+        topContentPlacement="outside"
+        onSelectionChange={setSelectedKeys}
+        onSortChange={setSortDescriptor}
+      >
+        <TableHeader columns={headerColumns}>
+          {(column) => (
+            <TableColumn
+              key={column.uid}
+              align={column.uid === "actions" ? "center" : "start"}
+              allowsSorting={column.sortable}
+            >
+              {column.name}
+            </TableColumn>
+          )}
+        </TableHeader>
+        <TableBody emptyContent={"No users found"} items={sortedItems}>
+          {(item) => (
+            <TableRow key={item.id}>
+              {(columnKey) => (
+                <TableCell>{renderCell(item, columnKey)}</TableCell>
+              )}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <footer className="w-full flex items-center justify-center py-3">
+        <Link
+          isExternal
+          className="flex items-center gap-1 text-current"
+          href="https://danymitte.vercel.app"
+          title="danymitte.vercel.app"
+        >
+          <span className="text-default-600">Creado por</span>
+          <p className="text-primary">Dany Mitte</p>
+        </Link>
+      </footer>
     </ProtectedRoute>
   );
 }

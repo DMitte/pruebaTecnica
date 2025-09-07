@@ -1,11 +1,16 @@
 "use client";
-import type {SVGProps} from "react";
+import type { SVGProps } from "react";
+import { useDisclosure } from "@heroui/react";
+import AgregarUsuarioDrawer from "../../components/users/agregar";
+import { agregarUsuario, editarUsuario } from "../api/users";
+import EditarUsuarioDrawer from "../../components/users/editar";
+import { eliminarUsuario } from "../api/users";
 
 import type { Selection, SortDescriptor } from "@heroui/table";
-
+import { getUsers } from "../api/users";
+import { ProtectedRoute } from "../../components/ProtectedRoute";
 import { Link } from "@heroui/link";
 import { Navbar } from "../../components/navbar";
-
 import React from "react";
 import {
   Table,
@@ -13,15 +18,19 @@ import {
   TableColumn,
   TableBody,
   TableRow,
-  TableCell,        
+  TableCell,
 } from "@heroui/table";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/dropdown";
-import { Chip } from "@heroui/chip";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/dropdown";
 import { User } from "@heroui/user";
 import { Pagination } from "@heroui/pagination";
-
+import { useAuth } from "../../context/Authcontext";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;
@@ -31,7 +40,12 @@ export function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 }
 
-export const PlusIcon = ({size = 24, width, height, ...props}: IconSvgProps) => {
+export const PlusIcon = ({
+  size = 24,
+  width,
+  height,
+  ...props
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -57,7 +71,12 @@ export const PlusIcon = ({size = 24, width, height, ...props}: IconSvgProps) => 
   );
 };
 
-export const VerticalDotsIcon = ({size = 24, width, height, ...props}: IconSvgProps) => {
+export const VerticalDotsIcon = ({
+  size = 24,
+  width,
+  height,
+  ...props
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -107,7 +126,10 @@ export const SearchIcon = (props: IconSvgProps) => {
   );
 };
 
-export const ChevronDownIcon = ({strokeWidth = 1.5, ...otherProps}: IconSvgProps) => {
+export const ChevronDownIcon = ({
+  strokeWidth = 1.5,
+  ...otherProps
+}: IconSvgProps) => {
   return (
     <svg
       aria-hidden="true"
@@ -132,232 +154,26 @@ export const ChevronDownIcon = ({strokeWidth = 1.5, ...otherProps}: IconSvgProps
 };
 
 export const columns = [
-  {name: "ID", uid: "id", sortable: true},
-  {name: "NOMBRE", uid: "name", sortable: true},
-  {name: "USERNAME", uid: "age", sortable: true},
-  {name: "ROL", uid: "role", sortable: true},
-  {name: "EMAIL", uid: "email"},  
-  {name: "ACTIONS", uid: "actions"},
+  { name: "ID", uid: "id", sortable: true },
+  { name: "NOMBRE", uid: "nombre", sortable: true },
+  { name: "USERNAME", uid: "username", sortable: true },
+  { name: "ROL", uid: "role" },
+  { name: "CORREO", uid: "email" },
+  { name: "ACCIONES", uid: "actions" },
 ];
 
-export const statusOptions = [
-  {name: "Active", uid: "active"},
-  {name: "Paused", uid: "paused"},
-  {name: "Vacation", uid: "vacation"},
-];
-
-export const users = [
-  {
-    id: 1,
-    name: "Tony Reichert",
-    role: "CEO",
-    team: "Management",
-    status: "active",
-    age: "29",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    email: "tony.reichert@example.com",
-  },
-  {
-    id: 2,
-    name: "Zoey Lang",
-    role: "Tech Lead",
-    team: "Development",
-    status: "paused",
-    age: "25",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-    email: "zoey.lang@example.com",
-  },
-  {
-    id: 3,
-    name: "Jane Fisher",
-    role: "Sr. Dev",
-    team: "Development",
-    status: "active",
-    age: "22",
-    avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d",
-    email: "jane.fisher@example.com",
-  },
-  {
-    id: 4,
-    name: "William Howard",
-    role: "C.M.",
-    team: "Marketing",
-    status: "vacation",
-    age: "28",
-    avatar: "https://i.pravatar.cc/150?u=a048581f4e29026701d",
-    email: "william.howard@example.com",
-  },
-  {
-    id: 5,
-    name: "Kristen Copper",
-    role: "S. Manager",
-    team: "Sales",
-    status: "active",
-    age: "24",
-    avatar: "https://i.pravatar.cc/150?u=a092581d4ef9026700d",
-    email: "kristen.cooper@example.com",
-  },
-  {
-    id: 6,
-    name: "Brian Kim",
-    role: "P. Manager",
-    team: "Management",
-    age: "29",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-    email: "brian.kim@example.com",
-    status: "Active",
-  },
-  {
-    id: 7,
-    name: "Michael Hunt",
-    role: "Designer",
-    team: "Design",
-    status: "paused",
-    age: "27",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e29027007d",
-    email: "michael.hunt@example.com",
-  },
-  {
-    id: 8,
-    name: "Samantha Brooks",
-    role: "HR Manager",
-    team: "HR",
-    status: "active",
-    age: "31",
-    avatar: "https://i.pravatar.cc/150?u=a042581f4e27027008d",
-    email: "samantha.brooks@example.com",
-  },
-  {
-    id: 9,
-    name: "Frank Harrison",
-    role: "F. Manager",
-    team: "Finance",
-    status: "vacation",
-    age: "33",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    email: "frank.harrison@example.com",
-  },
-  {
-    id: 10,
-    name: "Emma Adams",
-    role: "Ops Manager",
-    team: "Operations",
-    status: "active",
-    age: "35",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    email: "emma.adams@example.com",
-  },
-  {
-    id: 11,
-    name: "Brandon Stevens",
-    role: "Jr. Dev",
-    team: "Development",
-    status: "active",
-    age: "22",
-    avatar: "https://i.pravatar.cc/150?img=8",
-    email: "brandon.stevens@example.com",
-  },
-  {
-    id: 12,
-    name: "Megan Richards",
-    role: "P. Manager",
-    team: "Product",
-    status: "paused",
-    age: "28",
-    avatar: "https://i.pravatar.cc/150?img=10",
-    email: "megan.richards@example.com",
-  },
-  {
-    id: 13,
-    name: "Oliver Scott",
-    role: "S. Manager",
-    team: "Security",
-    status: "active",
-    age: "37",
-    avatar: "https://i.pravatar.cc/150?img=12",
-    email: "oliver.scott@example.com",
-  },
-  {
-    id: 14,
-    name: "Grace Allen",
-    role: "M. Specialist",
-    team: "Marketing",
-    status: "active",
-    age: "30",
-    avatar: "https://i.pravatar.cc/150?img=16",
-    email: "grace.allen@example.com",
-  },
-  {
-    id: 15,
-    name: "Noah Carter",
-    role: "IT Specialist",
-    team: "I. Technology",
-    status: "paused",
-    age: "31",
-    avatar: "https://i.pravatar.cc/150?img=15",
-    email: "noah.carter@example.com",
-  },
-  {
-    id: 16,
-    name: "Ava Perez",
-    role: "Manager",
-    team: "Sales",
-    status: "active",
-    age: "29",
-    avatar: "https://i.pravatar.cc/150?img=20",
-    email: "ava.perez@example.com",
-  },
-  {
-    id: 17,
-    name: "Liam Johnson",
-    role: "Data Analyst",
-    team: "Analysis",
-    status: "active",
-    age: "28",
-    avatar: "https://i.pravatar.cc/150?img=33",
-    email: "liam.johnson@example.com",
-  },
-  {
-    id: 18,
-    name: "Sophia Taylor",
-    role: "QA Analyst",
-    team: "Testing",
-    status: "active",
-    age: "27",
-    avatar: "https://i.pravatar.cc/150?img=29",
-    email: "sophia.taylor@example.com",
-  },
-  {
-    id: 19,
-    name: "Lucas Harris",
-    role: "Administrator",
-    team: "Information Technology",
-    status: "paused",
-    age: "32",
-    avatar: "https://i.pravatar.cc/150?img=50",
-    email: "lucas.harris@example.com",
-  },
-  {
-    id: 20,
-    name: "Mia Robinson",
-    role: "Coordinator",
-    team: "Operations",
-    status: "active",
-    age: "26",
-    avatar: "https://i.pravatar.cc/150?img=45",
-    email: "mia.robinson@example.com",
-  },
-];
-
-const INITIAL_VISIBLE_COLUMNS = ["name", "role", "status", "actions"];
-
-type User = (typeof users)[0];
+const INITIAL_VISIBLE_COLUMNS = ["nombre", "role", "email", "actions"];
 
 export default function Usuario() {
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [userToEdit, setUserToEdit] = React.useState(null);
   const [filterValue, setFilterValue] = React.useState("");
-  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
+  const [selectedKeys, setSelectedKeys] = React.useState<Selection>(
+    new Set([])
+  );
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
-    new Set(INITIAL_VISIBLE_COLUMNS),
+    new Set(INITIAL_VISIBLE_COLUMNS)
   );
   const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
@@ -367,13 +183,41 @@ export default function Usuario() {
   });
 
   const [page, setPage] = React.useState(1);
+  const { user } = useAuth();
+  const userRole = user?.role;
 
   const hasSearchFilter = Boolean(filterValue);
+
+  const [users, setUsers] = React.useState<any[]>([]);
+  type User = typeof users extends (infer U)[] ? U : any;
+
+  React.useEffect(() => {
+    if (!user || user.role !== "admin") {
+      window.location.href = "/";
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    async function fetchUsers() {
+      const usersData = await getUsers();
+      let allUsers: any[] = [];
+
+      if (Array.isArray(usersData)) {
+        allUsers = usersData;
+      } else if (usersData && Array.isArray(usersData.users)) {
+        allUsers = usersData.users;
+      }
+      setUsers(allUsers);
+    }
+    fetchUsers();
+  }, [userRole, user?.name]);
 
   const headerColumns = React.useMemo(() => {
     if (visibleColumns === "all") return columns;
 
-    return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    return columns.filter((column) =>
+      Array.from(visibleColumns).includes(column.uid)
+    );
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
@@ -381,12 +225,7 @@ export default function Usuario() {
 
     if (hasSearchFilter) {
       filteredUsers = filteredUsers.filter((user) =>
-        user.name.toLowerCase().includes(filterValue.toLowerCase()),
-      );
-    }
-    if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredUsers = filteredUsers.filter((user) =>
-        Array.from(statusFilter).includes(user.status),
+        user.cli_nombre.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
 
@@ -412,26 +251,60 @@ export default function Usuario() {
     });
   }, [sortDescriptor, items]);
 
+  const handleAddUser = async (userData: any) => {
+    const res = await agregarUsuario(userData);
+
+    if (res.error) {
+      console.error("Error al agregar usuario:", res.error);
+      return;
+    }
+    setUsers((prev) => [...prev, res.data]);
+  };
+
+  const handleEditUser = async (userData: any) => {
+    await editarUsuario(userData.id, userData);
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userData.id ? { ...u, ...userData } : u))
+    );
+  };
+
+  const handleDeleteUser = async (userId: string | number) => {
+    const confirm = window.confirm(
+      "¿Estás seguro que deseas eliminar este usuario?"
+    );
+    if (!confirm) return;
+
+    const res = await eliminarUsuario(userId);
+    if (res.error) {
+      console.error("Error al eliminar usuario:", res.error);
+      return;
+    }
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  };
+
   const renderCell = React.useCallback((user: User, columnKey: React.Key) => {
     const cellValue = user[columnKey as keyof User];
 
     switch (columnKey) {
-      case "name":
-        return (
-          <User            
-            description={user.email}
-            name={cellValue}
-          >
-            {user.email}
-          </User>
-        );
+      case "nombre":
+        return <User name={user.name}>{user.name}</User>;
       case "role":
         return (
           <div className="flex flex-col">
             <p className="text-bold text-small capitalize">{cellValue}</p>
-            <p className="text-bold text-tiny capitalize text-default-400">{user.team}</p>
           </div>
         );
+      case "creado":
+        return (
+          <div className="flex flex-col">
+            <p className="text-bold text-small">
+              {user.created_at
+                ? new Date(user.created_at).toISOString().slice(0, 10)
+                : ""}
+            </p>
+          </div>
+        );
+
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -441,9 +314,24 @@ export default function Usuario() {
                   <VerticalDotsIcon className="text-default-300" />
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu>                
-                <DropdownItem key="edit">Editar</DropdownItem>
-                <DropdownItem key="delete">Eliminar</DropdownItem>
+              <DropdownMenu>
+                <DropdownItem
+                  key="edit"
+                  onClick={() => {
+                    setUserToEdit(user);
+                    setIsEditOpen(true);
+                  }}
+                >
+                  Editar
+                </DropdownItem>
+
+                <DropdownItem
+                  key="delete"
+                  className="text-red-500"
+                  onClick={() => handleDeleteUser(user.id)}
+                >
+                  Eliminar
+                </DropdownItem>
               </DropdownMenu>
             </Dropdown>
           </div>
@@ -465,10 +353,13 @@ export default function Usuario() {
     }
   }, [page]);
 
-  const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowsPerPage(Number(e.target.value));
-    setPage(1);
-  }, []);
+  const onRowsPerPageChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setRowsPerPage(Number(e.target.value));
+      setPage(1);
+    },
+    []
+  );
 
   const onSearchChange = React.useCallback((value?: string) => {
     if (value) {
@@ -491,7 +382,7 @@ export default function Usuario() {
           <Input
             isClearable
             className="w-full sm:max-w-[44%]"
-            placeholder="Search by name..."
+            placeholder="Buscar por nombre..."
             startContent={<SearchIcon />}
             value={filterValue}
             onClear={() => onClear()}
@@ -500,29 +391,11 @@ export default function Usuario() {
           <div className="flex gap-3">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
-                  Status
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                disallowEmptySelection
-                aria-label="Table Columns"
-                closeOnSelect={false}
-                selectedKeys={statusFilter}
-                selectionMode="multiple"
-                onSelectionChange={setStatusFilter}
-              >
-                {statusOptions.map((status) => (
-                  <DropdownItem key={status.uid} className="capitalize">
-                    {capitalize(status.name)}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
-            </Dropdown>
-            <Dropdown>
-              <DropdownTrigger className="hidden sm:flex">
-                <Button endContent={<ChevronDownIcon className="text-small" />} variant="flat">
-                  Columns
+                <Button
+                  endContent={<ChevronDownIcon className="text-small" />}
+                  variant="flat"
+                >
+                  Columnas
                 </Button>
               </DropdownTrigger>
               <DropdownMenu
@@ -540,15 +413,17 @@ export default function Usuario() {
                 ))}
               </DropdownMenu>
             </Dropdown>
-            <Button color="primary" endContent={<PlusIcon />}>
-              Add New
+            <Button color="primary" endContent={<PlusIcon />} onPress={onOpen}>
+              Agregar Nuevo
             </Button>
           </div>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {users.length} users</span>
+        <div className="flex justify-between items-selectedcenter">
+          <span className="text-default-400 text-small">
+            Total {users.length} ventas
+          </span>
           <label className="flex items-center text-default-400 text-small">
-            Rows per page:
+            Filas por pagina:{" "}
             <select
               className="bg-transparent outline-solid outline-transparent text-default-400 text-small"
               onChange={onRowsPerPageChange}
@@ -573,12 +448,7 @@ export default function Usuario() {
 
   const bottomContent = React.useMemo(() => {
     return (
-      <div className="py-2 px-2 flex justify-between items-center ">
-        <span className="w-[30%] text-small text-default-400">
-          {selectedKeys === "all"
-            ? "All items selected"
-            : `${selectedKeys.size} of ${filteredItems.length} selected`}
-        </span>
+      <div className="py-2 px-2 flex justify-between items-center">
         <Pagination
           isCompact
           showControls
@@ -589,10 +459,20 @@ export default function Usuario() {
           onChange={setPage}
         />
         <div className="hidden sm:flex w-[30%] justify-end gap-2">
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button
+            isDisabled={pages === 1}
+            size="sm"
+            variant="flat"
+            onPress={onPreviousPage}
+          >
             Previous
           </Button>
-          <Button isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button
+            isDisabled={pages === 1}
+            size="sm"
+            variant="flat"
+            onPress={onNextPage}
+          >
             Next
           </Button>
         </div>
@@ -601,54 +481,65 @@ export default function Usuario() {
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
   return (
-    <>
-    <Navbar />
-    <Table
-      isHeaderSticky
-      aria-label="Example table with custom cells, pagination and sorting"
-      bottomContent={bottomContent}
-      bottomContentPlacement="outside"
-      classNames={{
-        wrapper: "max-h-[382px]",
-      }}
-      selectedKeys={selectedKeys}
-      selectionMode="multiple"
-      sortDescriptor={sortDescriptor}
-      topContent={topContent}
-      topContentPlacement="outside"
-      onSelectionChange={setSelectedKeys}
-      onSortChange={setSortDescriptor}
-    >
-      <TableHeader columns={headerColumns}>
-        {(column) => (
-          <TableColumn
-            key={column.uid}
-            align={column.uid === "actions" ? "center" : "start"}
-            allowsSorting={column.sortable}
-          >
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
-        {(item) => (
-          <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-    <footer className="w-full flex items-center justify-center py-3">
-              <Link
-                isExternal
-                className="flex items-center gap-1 text-current"
-                href="https://danymitte.vercel.app"
-                title="danymitte.vercel.app"
-              >
-                <span className="text-default-600">Creado por</span>
-                <p className="text-primary">Dany Mitte</p>
-              </Link>
-            </footer>
-    </>
+    <ProtectedRoute>
+      <Navbar />
+      <Table
+        isHeaderSticky
+        aria-label="Example table with custom cells, pagination and sorting"
+        bottomContent={bottomContent}
+        bottomContentPlacement="outside"
+        classNames={{
+          wrapper: "max-h-[382px]",
+        }}
+        sortDescriptor={sortDescriptor}
+        topContent={topContent}
+        topContentPlacement="outside"
+        onSelectionChange={setSelectedKeys}
+        onSortChange={setSortDescriptor}
+      >
+        <TableHeader columns={headerColumns}>
+          {(column) => (
+            <TableColumn
+              key={column.uid}
+              align={column.uid === "actions" ? "center" : "start"}
+              allowsSorting={column.sortable}
+            >
+              {column.name}
+            </TableColumn>
+          )}
+        </TableHeader>
+        <TableBody emptyContent={"No users found"} items={sortedItems}>
+          {(item) => (
+            <TableRow key={item.id}>
+              {(columnKey) => (
+                <TableCell>{renderCell(item, columnKey)}</TableCell>
+              )}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <footer className="w-full flex items-center justify-center py-3">
+        <Link
+          isExternal
+          className="flex items-center gap-1 text-current"
+          href="https://danymitte.vercel.app"
+          title="danymitte.vercel.app"
+        >
+          <span className="text-default-600">Creado por</span>
+          <p className="text-primary">Dany Mitte</p>
+        </Link>
+      </footer>
+      <AgregarUsuarioDrawer
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        onAddUser={handleAddUser}
+      />
+      <EditarUsuarioDrawer
+        isOpen={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        userToEdit={userToEdit}
+        onEditUser={handleEditUser}
+      />
+    </ProtectedRoute>
   );
 }
