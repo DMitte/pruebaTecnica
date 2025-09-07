@@ -14,6 +14,33 @@ export default function EditarVenta() {
   const { user } = useAuth();
   const [denied, setDenied] = useState(false);
 
+  // Validación de ventaId nulo
+  if (!ventaId) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#18181b] to-[#0a0a0a]">
+          <span className="text-red-400 text-xl">
+            No se proporcionó ID de venta.
+          </span>
+        </div>
+      </>
+    );
+  }
+
+  useEffect(() => {
+    if (user === undefined || user === null) return;
+    if (
+      user === null ||
+      (user.role !== "supervisor" && user.role !== "admin")
+    ) {
+      setDenied(true);
+      setTimeout(() => {
+        router.replace("/ventas");
+      }, 1500);
+    }
+  }, [user, router]);
+
   useEffect(() => {
     if (user === undefined || user === null) return;
     if (
