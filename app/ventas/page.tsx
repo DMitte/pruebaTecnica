@@ -495,6 +495,7 @@ export default function Ventas() {
   return (
     <ProtectedRoute>
       <Navbar />
+      <div className="px-4 lg:px-0">
       <Table
         isHeaderSticky
         aria-label="Example table with custom cells, pagination and sorting"
@@ -530,6 +531,7 @@ export default function Ventas() {
           )}
         </TableBody>
       </Table>
+      </div>
       <footer className="w-full flex items-center justify-center py-3">
         <Link
           isExternal
